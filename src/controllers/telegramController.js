@@ -17,10 +17,9 @@ const initializeBot = () => {
 
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
-
+   
     await bot.sendChatAction(chatId, "typing");
 
-   
     setTimeout(() => {
       bot.sendMessage(chatId, "Welcome to the bot! How can I assist you?");
     }, 10000);

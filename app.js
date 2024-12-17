@@ -1,30 +1,40 @@
-const { Server } = require("socket.io");
+const WebSocket = require("ws");
 const dotenv = require("dotenv").config();
 const { app, server } = require("./src/config/server");
 const { initializeBot } = require("./src/controllers/telegramController");
 
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"],
+const webSocketServer = new WebSocket.Server({
+  server,
+  handleProtocols: (protocols, request) => {
+    const origin = request.headers.origin;
+    const allowedOrigins = ["http://localhost:3000"];
+
+    if (allowedOrigins.includes(origin)) {
+      return true;
+    } else {
+      return false;
+    }
   },
 });
 
-io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
+webSocketServer.on("connection", (webSocketServer) => {
+  console.log("New client connected");
 
-  socket.on("message", (data) => {
-    console.log("Received message:", data);
-
-    io.emit("message", data);
+  webSocketServer.on("message", (message) => {
+    console.log(`Received: ${message}`);
+    webSocketServer.send("Message received");
   });
 
-  socket.on("disconnect", () => {
-    console.log("A user disconnected:", socket.id);
+  webSocketServer.on("close", () => {
+    console.log("Client disconnected");
   });
 });
 
 const port = process.env.PORT || 5000;
+
+app.get("*", (req, res) => {
+  res.send("");
+});
 
 initializeBot();
 
