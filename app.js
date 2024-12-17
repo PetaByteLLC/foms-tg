@@ -33,7 +33,7 @@ webSocketServer.on("connection", (webSocketServer) => {
 const port = process.env.PORT || 5000;
 
 app.get("*", (req, res) => {
-  res.send("");
+  res.send("init page");
 });
 
 initializeBot();
