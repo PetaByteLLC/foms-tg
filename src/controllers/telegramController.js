@@ -6,22 +6,24 @@ const bot = new TelegramBot(token, { polling: true });
 const initializeBot = () => {
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    const userName = msg.from.first_name || "дос | там ";
+    const userName = msg.from.first_name || "дос ";
 
     const message = `
         Салам, *${userName}!* _Биздин ботко кош келиңиз. Сизге кандай жардам бере алам?_\n
-        Привет, *${userName}!* _Добро пожаловать в наш бот. Чем я могу вам помочь?_\n
         `;
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   });
 
-  bot.on("message", (msg) => {
+  bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
 
-    if (msg.text !== "/start") {
-      bot.sendMessage(chatId, "I'm sorry, I don't understand that command.");
-    }
+    await bot.sendChatAction(chatId, "typing");
+
+   
+    setTimeout(() => {
+      bot.sendMessage(chatId, "Welcome to the bot! How can I assist you?");
+    }, 10000);
   });
 };
 
