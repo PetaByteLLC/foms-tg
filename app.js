@@ -1,7 +1,8 @@
 const WebSocket = require("ws");
+require("module-alias/register");
 const dotenv = require("dotenv").config();
-const { app, server } = require("./src/config/server");
-const { initializeBot } = require("./src/controllers/telegramController");
+const { app, server } = require("@/config/server");
+const { initializeBot } = require("@/controllers/telegramController");
 
 const webSocketServer = new WebSocket.Server({
   server,

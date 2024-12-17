@@ -1,20 +1,8 @@
-const axios = require("axios");
-const TelegramBot = require("node-telegram-bot-api");
+const { bot } = require("@/models/telegramBot");
 
-const token = process.env.BOT_TOKEN;
-
-const url = `https://api.telegram.org/bot${token}/deleteWebhook`;
-
-axios
-  .post(url)
-  .then((response) => {
-    console.log("Webhook deleted:", response.data);
-  })
-  .catch((error) => {
-    console.error("Error deleting webhook:", error);
-  });
-
-const bot = new TelegramBot(token, { polling: false });
+const regexPatterns = [/\/start/, /\/help/i];
+const startChatFeedback =
+  "Сурооңуз үчүн, ахмат. Биздин операторлор мүмкүн болушунча тез арада сурооңузга жооп беришет!";
 
 const initializeBot = () => {
   bot.onText(/\/start/, (msg) => {
@@ -29,13 +17,13 @@ const initializeBot = () => {
   });
 
   bot.on("message", async (msg) => {
-    const chatId = msg.chat.id;
+    const matchedPattern = regexPatterns.find((regex) => regex.test(msg.text));
 
-    await bot.sendChatAction(chatId, "typing");
+    if (!matchedPattern) {
+      const chatId = msg.chat.id;
 
-    setTimeout(() => {
       bot.sendMessage(chatId, "Welcome to the bot! How can I assist you?");
-    }, 10000);
+    }
   });
 };
 
