@@ -1,9 +1,9 @@
 const { bot } = require("@/models/telegramBot");
-const { doesChatExist } = require("@/controllers/fomsController");  
+const { doesChatExist } = require("@/controllers/fomsChatController");
 
 const regexPatterns = [/\/start/, /\/help/i];
 const startChatFeedback =
-  "Сурооңуз үчүн, ахмат. Биздин операторлор мүмкүн болушунча тез арада сурооңузга жооп беришет!";
+  "Кайрылууңуз үчүн рахмат. Биздин операторлор мүмкүн болушунча тез арада сурооңузга жооп беришет!";
 
 const initializeBot = () => {
   bot.onText(/\/start/, (msg) => {
@@ -11,7 +11,7 @@ const initializeBot = () => {
     const userName = msg.from.first_name || "дос ";
 
     const message = `
-        Салам, *${userName}!* _Биздин ботко кош келиңиз. Сизге кандай жардам бере алам?_\n
+        Саламатсызбы, *${userName}!* _Биздин ботко кош келиңиз. Сизге кандай жардам бере алам?_\n
         `;
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
@@ -22,9 +22,13 @@ const initializeBot = () => {
 
     if (!matchedPattern) {
       const chatId = msg.chat.id;
-      doesChatExist(chatId);
+      const isChatAvailable = await doesChatExist(chatId);
 
-      bot.sendMessage(chatId, "Welcome to the bot! How can I assist you?");
+      if (isChatAvailable) {
+        console.log("The user texted before!");
+      } else {
+        bot.sendMessage(chatId, startChatFeedback);
+      }
     }
   });
 };
