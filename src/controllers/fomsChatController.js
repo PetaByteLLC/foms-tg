@@ -18,18 +18,20 @@ const doesChatExist = async (chatId) => {
       },
     };
 
+    const requestHeader = {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Cookie: `${csrfToken}; ${jSessionId}`,
+      },
+    };
+
     try {
-      const response = await axios.post(url, requestBody, {
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Cookie: `${csrfToken}; ${jSessionId}`,
-        },
-      });
+      const response = await axios.post(url, requestBody, requestHeader);
 
       if (response.status === 200) {
         const data = response.data;
-        console.log(data.status === 0 && data.total > 0);
+        return (data.status === 0 && data.total > 0);
       } else {
         throw new Error("Request failed");
       }
