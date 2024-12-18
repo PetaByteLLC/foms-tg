@@ -1,4 +1,5 @@
 const { bot } = require("@/models/telegramBot");
+const { doesChatExist } = require("@/controllers/fomsController");  
 
 const regexPatterns = [/\/start/, /\/help/i];
 const startChatFeedback =
@@ -21,6 +22,7 @@ const initializeBot = () => {
 
     if (!matchedPattern) {
       const chatId = msg.chat.id;
+      doesChatExist(chatId);
 
       bot.sendMessage(chatId, "Welcome to the bot! How can I assist you?");
     }
