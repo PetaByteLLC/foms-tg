@@ -1,4 +1,6 @@
-const russiaFlag = ":ru:";
-const kyrgyzstanFlag = ":kyrgyzstan:";
+const ruFlag = ":ru:";
+const warning = ":warning:";
+const kgFlag = ":kyrgyzstan:";
+const errorAttention = ":bangbang:";
 
-module.exports = { kyrgyzstanFlag, russiaFlag };
+module.exports = { kgFlag, ruFlag, warning, errorAttention };

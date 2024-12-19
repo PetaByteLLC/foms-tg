@@ -47,8 +47,4 @@ const getAuthTokens = async () => {
   }
 };
 
-const primaryResponseCondition = (response) => {
-  return response.data.status === 0 && response.data.total > 0;
-};
-
-module.exports = { getAuthTokens, BASE_URL, primaryResponseCondition };
+module.exports = { getAuthTokens, BASE_URL };

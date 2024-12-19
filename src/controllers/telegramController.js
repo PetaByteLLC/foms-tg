@@ -1,11 +1,14 @@
 const emoji = require("node-emoji");
 const { bot } = require("@/models/telegramBot");
+const { createChat } = require("@/controllers/fomsChatController");
 const { doesChatExist } = require("@/controllers/fomsChatController");
+const { createMessage } = require("@/controllers/fomsChatMessageController");
+const { kgFlag, ruFlag, warning, errorAttention } = require("@/utils/emoji");
 const { createChatAppeal } = require("@/controllers/fomsChatAppealController");
-const { kyrgyzstanFlag: kgFlag, russiaFlag: ruFlag } = require("@/utils/emoji");
 
 const regexPatterns = [/\/start/, /\/help/i];
 const firstFeedbackMessage = `${kgFlag} _Кайрылууңуз үчүн рахмат. Биздин операторлор мүмкүн болушунча тез арада сурооңузга жооп беришет!_\n\n${ruFlag} _Спасибо за ваш запрос. Наши операторы ответят на ваш вопрос как можно скорее!_`;
+const errorMessage = `_${errorAttention} Бир жерден ката кетти, бир нече мүнөттөн кийин аракет кылып көрүңүз!_\n\n _${errorAttention} Что-то пошло не так. Попробуйте через несколько минут!_`;
 
 const initializeBot = (connectedClients) => {
   bot.onText(/\/start/, (message) => {
@@ -17,39 +20,19 @@ const initializeBot = (connectedClients) => {
     sendMessage(chatId, greetingMessage);
   });
 
-  bot.on("message", async (message) => {
-    const matchedPattern = regexPatterns.find((regex) =>
-      regex.test(message.text)
-    );
-
-    if (!matchedPattern) {
-      const chatId = message.chat.id;
-      const isChatAvailable = await doesChatExist(chatId);
-
-      if (isChatAvailable) {
-        console.log("The user texted before!");
-      } else {
-        sendMessage(chatId, firstFeedbackMessage);
-        const chatAppealData = createChatAppeal(message);
-        console.log(chatAppealData);
-
-        const data = {
-          chatId: chatId,
-          type: "telegramMessage",
-          title: `${message.from.first_name} ${message.from.last_name}`,
-          titleColor: "blue",
-          messageType: "text",
-          date: formattedDate(message),
-          text: message.text,
-          isOwnMessage: false,
-        };
-
-        for (const client of connectedClients) {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
-          }
-        }
-      }
+  bot.on("message", (msg) => {
+    if (msg.text) {
+      handleTextMessage(msg, connectedClients);
+    } else if (msg.video) {
+      bot.sendMessage(chatId, "You sent a video!");
+    } else if (msg.document) {
+      bot.sendMessage(chatId, "You sent a document!");
+    } else if (msg.photo) {
+      bot.sendMessage(chatId, "You sent a photo!");
+    } else if (msg.audio) {
+      bot.sendMessage(chatId, "You sent an audio file!");
+    } else {
+      bot.sendMessage(chatId, "Unknown message type!");
     }
   });
 };
@@ -60,22 +43,57 @@ const sendMessage = (chatId, message) => {
   });
 };
 
-const formattedDate = (message) => {
-  const options = {
-    timeZone: "Asia/Bishkek",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  };
-  const formatter = new Intl.DateTimeFormat("en-GB", options);
-  const parts = formatter.formatToParts(new Date(message.date * 1000));
-  const formattedDate = `${parts[4].value}-${parts[2].value}-${parts[0].value} ${parts[6].value}:${parts[8].value}:${parts[10].value}`;
+const handleTextMessage = async (message, connectedClients) => {
+  const matchedPattern = regexPatterns.find((regex) =>
+    regex.test(message.text)
+  );
 
-  return formattedDate;
+  if (!matchedPattern) {
+    const chatId = message.chat.id;
+    const availableChat = await doesChatExist(chatId);
+
+    if (availableChat) {
+      console.log(availableChat, "the user texted before");
+    } else {
+      sendMessage(chatId, firstFeedbackMessage);
+
+      try {
+        const chatAppealData = await createChatAppeal(message);
+        if (!createChatAppeal) cancelTheAction(chatId);
+
+        const chatData = await createChat(chatAppealData, chatId);
+        if (!chatData) cancelTheAction(chatId);
+
+        const messageData = await createMessage(
+          chatAppealData,
+          chatData,
+          message
+        );
+
+        if (!messageData) cancelTheAction(chatId);
+
+        const data = {
+          chatId,
+          messageData: messageData,
+          chatData: chatData,
+        };
+
+        for (const client of connectedClients) {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(data));
+          }
+        }
+      } catch (error) {
+        console.error("Error handling chat or message creation:", error);
+        sendMessage(chatId, errorMessage);
+      }
+    }
+  }
+};
+
+const cancelTheAction = (chatId) => {
+  sendMessage(chatId, errorMessage);
+  return;
 };
 
 module.exports = { initializeBot };
