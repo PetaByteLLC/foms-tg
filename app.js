@@ -5,6 +5,8 @@ const dotenv = require("dotenv").config();
 const { app, server } = require("@/config/server");
 const { initializeBot } = require("@/controllers/telegramController");
 
+const connectedClients = new Set();
+
 const allowedOrigins = [
   "https://foms.brisklyminds.com",
   "https://call-center.foms.kg",
@@ -40,6 +42,8 @@ const webSocketServer = new WebSocket.Server({
 webSocketServer.on("connection", (webSocketServer) => {
   console.log("New client connected");
 
+  connectedClients.add(webSocketServer);
+
   webSocketServer.on("message", (message) => {
     console.log(`Received: ${message}`);
     webSocketServer.send("Message received");
@@ -47,6 +51,7 @@ webSocketServer.on("connection", (webSocketServer) => {
 
   webSocketServer.on("close", () => {
     console.log("Client disconnected");
+    connectedClients.delete(webSocketServer);
   });
 });
 
@@ -56,7 +61,7 @@ app.get("*", (req, res) => {
   res.send("init page");
 });
 
-initializeBot();
+initializeBot(connectedClients);
 
 server.listen(port, () => {
   console.log(`Server is running on: http://localhost:${port}`);

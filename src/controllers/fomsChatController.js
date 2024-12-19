@@ -1,5 +1,9 @@
 const axios = require("axios");
-const { getAuthTokens, BASE_URL } = require("@/utils/auth");
+const {
+  BASE_URL,
+  getAuthTokens,
+  primaryResponseCondition,
+} = require("@/utils/auth");
 
 const createChat = () => {};
 
@@ -30,8 +34,7 @@ const doesChatExist = async (chatId) => {
       const response = await axios.post(url, requestBody, requestHeader);
 
       if (response.status === 200) {
-        const data = response.data;
-        return (data.status === 0 && data.total > 0);
+        return primaryResponseCondition(response);
       } else {
         throw new Error("Request failed");
       }
