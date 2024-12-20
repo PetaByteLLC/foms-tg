@@ -1,23 +1,34 @@
+const path = require("path");
 const emoji = require("node-emoji");
 const { bot } = require("@/models/telegramBot");
+const { kgFlag, ruFlag } = require("@/utils/emoji");
+const messages = require("@/utils/interactionMessages");
+const { languageButtons } = require("@/utils/interactionButtons");
 const { createChat } = require("@/controllers/fomsChatController");
 const { doesChatExist } = require("@/controllers/fomsChatController");
 const { createMessage } = require("@/controllers/fomsChatMessageController");
-const { kgFlag, ruFlag, warning, errorAttention } = require("@/utils/emoji");
 const { createChatAppeal } = require("@/controllers/fomsChatAppealController");
 
+let language = "";
+
 const regexPatterns = [/\/start/, /\/help/i];
-const firstFeedbackMessage = `${kgFlag} _Кайрылууңуз үчүн рахмат. Биздин операторлор мүмкүн болушунча тез арада сурооңузга жооп беришет!_\n\n${ruFlag} _Спасибо за ваш запрос. Наши операторы ответят на ваш вопрос как можно скорее!_`;
-const errorMessage = `_${errorAttention} Бир жерден ката кетти, бир нече мүнөттөн кийин аракет кылып көрүңүз!_\n\n _${errorAttention} Что-то пошло не так. Попробуйте через несколько минут!_`;
 
 const initializeBot = (connectedClients) => {
   bot.onText(/\/start/, (message) => {
     const chatId = message.chat.id;
     const userName = message.from.first_name || "";
+    const greetingMessage = {
+      kg: `${kgFlag} Саламатсызбы *${userName}*, _Биздин ботко кош келиңиз. Сизге кандай жардам бере алам?_`,
+      ru: `${ruFlag} Здравствуйте *${userName}*, _Добро пожаловать в нашего бота. Чем я могу вам помочь?_`,
+    };
 
-    const greetingMessage = `${kgFlag} Саламатсызбы, *${userName}!* _Биздин ботко кош келиңиз. Сизге кандай жардам бере алам?_\n\n${ruFlag} Здравствуйте, *${userName}!*! Добро пожаловать в нашего бота. Чем я могу вам помочь?`;
+    sendMessage(chatId, `${greetingMessage.kg}\n\n${greetingMessage.ru}`);
 
-    sendMessage(chatId, greetingMessage);
+    bot.sendMessage(chatId, "Тилди тандаңыз / Выберите язык:", {
+      reply_markup: {
+        inline_keyboard: [kyrgyzLanguageBtn, russianLanguageBtn],
+      },
+    });
   });
 
   bot.on("message", (msg) => {
@@ -34,6 +45,27 @@ const initializeBot = (connectedClients) => {
     } else {
       bot.sendMessage(chatId, "Unknown message type!");
     }
+  });
+
+  bot.on("callback_query", (callbackQuery) => {
+    const message = callbackQuery.message;
+    const messageId = message.message_id;
+    const chatId = callbackQuery.message.chat.id;
+
+    if (callbackQuery.data === "kg") {
+      language = "kg";
+    } else if (callbackQuery.data === "ru") {
+      language = "ru";
+    }
+
+    bot.deleteMessage(chatId, messageId).catch((err) => {
+      console.error("Failed to delete message:", err);
+    });
+    bot.answerCallbackQuery(callbackQuery.id);
+  });
+
+  bot.on("polling_error", (error) => {
+    console.log(`[polling_error] ${error.code}: ${error.message}`);
   });
 };
 
@@ -52,42 +84,42 @@ const handleTextMessage = async (message, connectedClients) => {
     const chatId = message.chat.id;
     const availableChat = await doesChatExist(chatId);
 
-    if (availableChat) {
-      console.log(availableChat, "the user texted before");
-    } else {
-      sendMessage(chatId, firstFeedbackMessage);
+    // if (availableChat) {
+    //   console.log(availableChat, "the user texted before");
+    // } else {
+    //   sendMessage(chatId, firstFeedbackMessage);
 
-      try {
-        const chatAppealData = await createChatAppeal(message);
-        if (!createChatAppeal) cancelTheAction(chatId);
+    //   try {
+    //     const chatAppealData = await createChatAppeal(message);
+    //     if (!createChatAppeal) cancelTheAction(chatId);
 
-        const chatData = await createChat(chatAppealData, chatId);
-        if (!chatData) cancelTheAction(chatId);
+    //     const chatData = await createChat(chatAppealData, chatId);
+    //     if (!chatData) cancelTheAction(chatId);
 
-        const messageData = await createMessage(
-          chatAppealData,
-          chatData,
-          message
-        );
+    //     const messageData = await createMessage(
+    //       chatAppealData,
+    //       chatData,
+    //       message
+    //     );
 
-        if (!messageData) cancelTheAction(chatId);
+    //     if (!messageData) cancelTheAction(chatId);
 
-        const data = {
-          chatId,
-          messageData: messageData,
-          chatData: chatData,
-        };
+    //     const data = {
+    //       chatId,
+    //       messageData: messageData,
+    //       chatData: chatData,
+    //     };
 
-        for (const client of connectedClients) {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
-          }
-        }
-      } catch (error) {
-        console.error("Error handling chat or message creation:", error);
-        sendMessage(chatId, errorMessage);
-      }
-    }
+    //     for (const client of connectedClients) {
+    //       if (client.readyState === WebSocket.OPEN) {
+    //         client.send(JSON.stringify(data));
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error("Error handling chat or message creation:", error);
+    //     sendMessage(chatId, errorMessage);
+    //   }
+    // }
   }
 };
 

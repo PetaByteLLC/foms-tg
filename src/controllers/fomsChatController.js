@@ -69,7 +69,6 @@ const doesChatExist = async (chatId) => {
     try {
       const response = await axios.post(url, requestBody, requestHeader);
 
-      console.log(response)
       if (
         response.status === 200 &&
         response.data.status === 0 &&
