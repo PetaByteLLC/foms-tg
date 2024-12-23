@@ -26,7 +26,7 @@ const initializeBot = (connectedClients) => {
 
     bot.sendMessage(chatId, "Тилди тандаңыз / Выберите язык:", {
       reply_markup: {
-        inline_keyboard: [kyrgyzLanguageBtn, russianLanguageBtn],
+        inline_keyboard: [languageButtons.kg, languageButtons.ru],
       },
     });
   });
@@ -67,6 +67,10 @@ const initializeBot = (connectedClients) => {
   bot.on("polling_error", (error) => {
     console.log(`[polling_error] ${error.code}: ${error.message}`);
   });
+
+  bot.setMyCommands([
+    { command: "/start", description: "Ботту кайрадан баштатуу." },
+  ]);
 };
 
 const sendMessage = (chatId, message) => {
